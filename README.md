@@ -1,7 +1,8 @@
-# y
+# QQ红包
 
-> AlloyTouch
+> 使用了Vue和AlloyTouch，[Demo](http://sioxas.github.io/red-packet/)（请在手机上打开）
 
+![红包截图](https://github.com/Sioxas/GitImage/raw/master/redpackage.gif)
 ## Build Setup
 
 ``` bash
