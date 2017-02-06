@@ -1,6 +1,7 @@
 <template>
   <div id="app"
        v-alloytouch="{options,methods:{change},max,min}">
+
     <div id="header">
       <div id="type">突然想发个红包</div>
       <div id="money">1.00</div>
@@ -10,38 +11,42 @@
       <div id="name">章鱼烧</div>
     </div>
     <div id="wrapper">
-      <canvas id="quadratic"></canvas>
+      <canvas id="quadratic" @touchend="open"></canvas>
       <div id="container">
-        <div class="tips-line">共5个红包，已领完</div>
-        <ul class="border-1px border-1px-before">
-          <li class="border-1px border-1px-after" v-for="i in 5">
-            <div class="userhead">
-              <img src="./assets/head.jpg" alt="">
-            </div>
-            <div class="wrapper-left">
-              <div class="name">章鱼烧</div>
-              <div class="time">15:50:36</div>
-            </div>
-            <div class="wrapper-right">
-              <div class="money">0.39</div>
-              <div class="lucky-king">运气王</div>
-            </div>
-          </li>
-        </ul>
+        <transition name="slide">
+          <div class="tips-line" v-if="isOpen">共8个红包，已领完</div>
+        </transition>
+        <transition name="slide" @after-enter="afterOpen">
+          <ul id="detail-list" class="border-1px border-1px-before" v-if="isOpen">
+            <li class="border-1px border-1px-after" v-for="i in 8">
+              <div class="userhead">
+                <img src="./assets/head.jpg" alt="">
+              </div>
+              <div class="wrapper-left">
+                <div class="name">章鱼烧</div>
+                <div class="time">15:50:36</div>
+              </div>
+              <div class="wrapper-right">
+                <div class="money">0.39</div>
+                <div class="lucky-king">运气王</div>
+              </div>
+            </li>
+          </ul>
+        </transition>
       </div>
     </div>
-    <div id="blank"></div>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
   import Transform from './alloytouch/transform.js'
-
+  import TWEEN from 'tween.js'
   export default {
     name: 'app',
     components: {},
     data(){
       return {
+        isOpen: false,
         quadraticCurveCanvas: null,
         quadraticCurve: null,
         // 初始化设置
@@ -51,7 +56,7 @@
           target: "#wrapper", //运动的对象
           property: "translateY",  //被滚动的属性
           sensitivity: 1,//不必需,触摸区域的灵敏度，默认值为1，可以为负数
-          factor: 0.1,//不必需,默认值是1代表touch区域的1px的对应target.y的1
+          factor: 1,//不必需,默认值是1代表touch区域的1px的对应target.y的1
           step: 40
         },
         // 动态设置属性
@@ -76,30 +81,56 @@
           this.quadraticCurve.canvas.height / 7 * 3 - val - 70,
           this.quadraticCurve.canvas.width,
           this.quadraticCurve.canvas.height / 7 * 3)
-        this.quadraticCurve.lineTo(
-          this.quadraticCurve.canvas.width,
-          this.quadraticCurve.canvas.height)
-        this.quadraticCurve.lineTo(
-          0,
-          this.quadraticCurve.canvas.height)
+        this.quadraticCurve.lineTo(this.quadraticCurve.canvas.width, 0)
+        this.quadraticCurve.lineTo(0, 0)
         this.quadraticCurve.stroke()
         this.quadraticCurve.closePath()
         this.quadraticCurve.fill()
         this.quadraticCurve.restore()
       },
       moveHeader(val){
-          if(val>-70){
-            this.header.translateY=val/2
-          }else{
-            this.header.translateY=-35+70+val
-          }
+        if (val > -70) {
+          this.header.translateY = val / 2
+        } else {
+          this.header.translateY = -35 + 70 + val
+        }
+      },
+      animationPacket(){
+        let vm = this
+
+        function animate(time) {
+          requestAnimationFrame(animate)
+          TWEEN.update(time)
+        }
+
+        new TWEEN.Tween({r: parseInt('c3', 16), g: parseInt('30', 16), b: parseInt('4a', 16)})
+          .to({r: parseInt('ff', 16), g: parseInt('ff', 16), b: parseInt('ff', 16)}, 300)
+          .onUpdate(function () {
+            vm.container.style.background = '#'
+              + parseInt(this.r).toString(16)
+              + parseInt(this.g).toString(16)
+              + parseInt(this.b).toString(16)
+          })
+          .start()
+        animate()
+      },
+      open(){
+        if (this.isOpen)return
+        this.isOpen = true
+        this.animationPacket()
+      },
+      afterOpen(){
+        let detailList = document.getElementById('detail-list')
+        this.container.style.height = parseInt(window.getComputedStyle(detailList).height) + 30 + 'px'
+
+        this.min = -(parseInt(window.getComputedStyle(this.container).paddingTop)
+        + parseInt(window.getComputedStyle(this.container).height) - window.innerHeight)
       }
     },
     mounted(){
-      document.addEventListener("touchmove", function (evt) {
-        evt.preventDefault();
-      })
+      this.app = document.getElementById("app")
       this.header = document.getElementById("header")
+      Transform(this.app, true)
       Transform(this.header)
 
       this.quadraticCurveCanvas = document.getElementById('quadratic')
@@ -108,17 +139,18 @@
       this.quadraticCurve = this.quadraticCurveCanvas.getContext("2d")
       this.quadraticCurve.lineWidth = 1
       this.quadraticCurve.strokeStyle = "#cf3a50"
-      this.quadraticCurve.fillStyle = "#fff"
-
-      let container=document.getElementById('container')
-      container.style.top = this.quadraticCurveCanvas.height / 7 * 3 +60+ 'px'
-      document.getElementById('header').style.top = this.quadraticCurveCanvas.height / 7 * 3 -35 -35-100 + 'px'
+      this.quadraticCurve.fillStyle = "#cf3a50"
+//      this.quadraticCurve.fillStyle = "#c3304a"
+//      this.quadraticCurve.fillStyle = "#fff"
 
       this.drawQuadraticCurve(0)
+      document.getElementById('header').style.top = this.quadraticCurveCanvas.height / 7 * 3 - 35 - 35 - 100 + 'px'
 
-      this.min=-(parseInt(window.getComputedStyle(container).top)
-        +parseInt(window.getComputedStyle(container).height) -window.innerHeight+20)
-      console.log(this.min)
+      this.container = document.getElementById('container')
+      this.container.style.paddingTop = this.quadraticCurveCanvas.height / 7 * 3 + 60 + 20 + 'px'
+      this.container.style.minHeight = parseInt(window.innerHeight) - parseInt(this.container.style.paddingTop) + 'px'
+
+//      requestAnimationFrame(this.animationPacket)
     }
   }
 </script>
@@ -139,47 +171,50 @@
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft Yahei", Tahoma, Simsun, sans-serif;
     height: 100%;
     background: #cf3a50;
-    #header{
+    /*background: #fff;*/
+    overflow: hidden;
+    animation: .5s packet-open;
+    #header {
       position: fixed;
-      top:0;
-      width:100%;
+      top: 0;
+      width: 100%;
       text-align: center;
-      z-index: 2;
-      #type{
-        color:#fbd49d;
+      z-index: 3;
+      #type {
+        color: #fbd49d;
         line-height: 40px;
         font-size: larger;
       }
-      #money{
-        color:#fbd49d;
+      #money {
+        color: #fbd49d;
         font-size: 35px;
         line-height: 40px;
-        margin-bottom:20px;
-        &:before{
+        margin-bottom: 20px;
+        &:before {
           content: "共";
           font-size: large;
         }
-        &:after{
+        &:after {
           content: "元";
           font-size: large;
         }
       }
-      #pic{
-        width:70px;
-        height:70px;
-        margin:0 auto;
-        img{
-          width:70px;
-          height:70px;
+      #pic {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto;
+        img {
+          width: 70px;
+          height: 70px;
           border-radius: 50%;
           display: block;
         }
       }
-      #name{
+      #name {
         font-size: larger;
         line-height: 40px;
-        &:after{
-          content:"的红包";
+        &:after {
+          content: "的红包";
         }
       }
     }
@@ -189,70 +224,105 @@
       #quadratic {
         position: absolute;
         top: 0;
+        z-index: 2;
       }
       #container {
-        background: #fff;
+        background: #c3304a;
+        /*opacity:0;*/
         position: absolute;
         width: 100%;
-        /*min-height:700px;*/
-        padding-top:20px;
-        .tips-line{
-          color:#999;
-          line-height:30px;
-          padding-left:10px;
+        height: 100%;
+        padding-top: 20px;
+        .tips-line {
+          color: #999;
+          line-height: 30px;
+          padding-left: 10px;
         }
-        ul{
+        ul {
           list-style: none;
-          li{
-            display:flex;
-            flex-direction:row;
-            height:50px;
-            margin-left:10px;
-            padding:10px 10px 10px 0;
-            .userhead{
-              width:50px;
-              height:50px;
-              img{
-                width:50px;
-                height:50px;
-                border-radius:50%;
-                display:block;
+          li {
+            display: flex;
+            flex-direction: row;
+            height: 50px;
+            margin-left: 10px;
+            padding: 10px 10px 10px 0;
+            .userhead {
+              width: 50px;
+              height: 50px;
+              img {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                display: block;
               }
             }
-            .wrapper-left{
-              flex-grow:1;
-              padding-left:10px;
-              .name{
+            .wrapper-left {
+              flex-grow: 1;
+              padding-left: 10px;
+              .name {
                 font-size: larger;
               }
-              .time{
-                color:#999;
+              .time {
+                color: #999;
               }
             }
-            .wrapper-right{
-              .money{
+            .wrapper-right {
+              .money {
                 font-size: larger;
               }
-              .lucky-king{
+              .lucky-king {
                 font-size: small;
-                color:#cf3a50;
-                background:#fbd49d ;
-                padding:0 3px;
-                border-radius:5px;
+                color: #cf3a50;
+                background: #fbd49d;
+                padding: 0 3px;
+                border-radius: 5px;
               }
             }
           }
         }
       }
     }
-    #blank{
+    #blank {
       position: fixed;
-      height:200px;
-      width:100%;
+      height: 200px;
+      width: 100%;
       background: #fff;
-      bottom:0;
-      z-index:0;
+      bottom: 0;
+      z-index: 0;
     }
+  }
+
+  @keyframes packet-open {
+    0% {
+      transform: scale(0.3);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes container-background {
+    0% {
+      background: #c3304a;
+    }
+    100% {
+      background: #fff;
+    }
+  }
+
+  .slide-enter-active {
+    transition: all .3s ease;
+  }
+
+  .slide-leave-active {
+    transition: all .3s ease-out;
+  }
+
+  .slide-enter, .slide-leave-active {
+    transform: translateY(100px);
+    opacity: 0;
   }
 
   /*border-1px 部分*/
