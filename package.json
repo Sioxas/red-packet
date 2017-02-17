@@ -1,7 +1,7 @@
 {
   "name": "QQ-red-packet",
   "version": "1.0.0",
-  "description": "AlloyTouch",
+  "description": "QQ红包",
   "author": "Sioxas <sioxas@qq.com>",
   "private": true,
   "scripts": {

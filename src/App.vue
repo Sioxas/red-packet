@@ -41,11 +41,13 @@
 <script type="text/ecmascript-6">
   import Transform from './alloytouch/transform.js'
   import TWEEN from 'tween.js'
+  import {hex2rgb,rgb2hex} from './utils.js'
   export default {
     name: 'app',
     components: {},
     data(){
       return {
+          isOpening:true,
         isOpen: false,
         quadraticCurveCanvas: null,
         quadraticCurve: null,
@@ -66,6 +68,7 @@
     },
     methods: {
       change(v){
+        if (this.isOpening)return
         if (v > -70) {
           this.drawQuadraticCurve(v)
         }
@@ -103,23 +106,28 @@
           TWEEN.update(time)
         }
 
-        new TWEEN.Tween({r: parseInt('c3', 16), g: parseInt('30', 16), b: parseInt('4a', 16)})
-          .to({r: parseInt('ff', 16), g: parseInt('ff', 16), b: parseInt('ff', 16)}, 300)
+        new TWEEN.Tween({
+          ...hex2rgb('#c3304a'),
+          p: 100
+        })
+          .to({...hex2rgb('#fff'), p: 0}, 300)
           .onUpdate(function () {
-            vm.container.style.background = '#'
-              + parseInt(this.r).toString(16)
-              + parseInt(this.g).toString(16)
-              + parseInt(this.b).toString(16)
-          })
-          .start()
+            vm.container.style.background = rgb2hex(this.r,this.g,this.b)
+            vm.drawQuadraticCurve(this.p)
+            vm.moveHeader(this.p)
+            vm.wrapper.translateY=this.p
+          }).start()
+
         animate()
       },
       open(){
         if (this.isOpen)return
         this.isOpen = true
+        this.isOpening=true
         this.animationPacket()
       },
       afterOpen(){
+        this.isOpening=false
         let detailList = document.getElementById('detail-list')
         this.container.style.height = parseInt(window.getComputedStyle(detailList).height) + 30 + 'px'
 
@@ -130,6 +138,7 @@
     mounted(){
       this.app = document.getElementById("app")
       this.header = document.getElementById("header")
+      this.wrapper= document.getElementById("wrapper")
       Transform(this.app, true)
       Transform(this.header)
 
@@ -143,7 +152,9 @@
 //      this.quadraticCurve.fillStyle = "#c3304a"
 //      this.quadraticCurve.fillStyle = "#fff"
 
-      this.drawQuadraticCurve(0)
+      this.drawQuadraticCurve(100)
+      this.moveHeader(100)
+      this.wrapper.translateY=100
       document.getElementById('header').style.top = this.quadraticCurveCanvas.height / 7 * 3 - 35 - 35 - 100 + 'px'
 
       this.container = document.getElementById('container')
